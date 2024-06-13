@@ -932,7 +932,15 @@ class EsmModel(EsmPreTrainedModel):
         )
 
     def predict_contacts(self, tokens, attention_mask):
+
+        device = self.contact_head.regression.bias.device
         attns = self(tokens, attention_mask=attention_mask, return_dict=True, output_attentions=True).attentions
+        
+        # cast inputs to the contact head device
+        tokens = tokens.to(device)
+        attention_mask = attention_mask.to(device)
+        attns = [ attn.to(device) for attn in attns ]
+        
         attns = torch.stack(attns, dim=1)  # Matches the original model layout
         # In the original model, attentions for padding tokens are completely zeroed out.
         # This makes no difference most of the time because the other tokens won't attend to them,
